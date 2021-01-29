@@ -1,12 +1,9 @@
-import os
 import unittest
 from unittest import mock
 
 from examples.auth.authentication_manager import AuthenticationManager
 from examples.auth.http_request import HTTPRequest
 from examples.auth.jwt_requests_validator import JwtRequestsValidator
-from examples.download.downloader_service import DownloaderService, ApkNotFoundException
-from examples.download.migration_repository import MigrationRepository
 
 
 class TestAuthenticationManager(unittest.TestCase):
@@ -27,7 +24,12 @@ class TestAuthenticationManager(unittest.TestCase):
         valid = self.authentication_manager.validate(request)
         self.assertEqual(valid, True)
 
-    def test_validate_on_team_internal_without_jwt(self):
+    def test_validate_on_team_internal_without_authorization(self):
+        request = HTTPRequest("/migration/list", {"team": "internal"})
+        valid = self.authentication_manager.validate(request)
+        self.assertEqual(valid, False)
+
+    def test_validate_on_team_internal_without_bearer(self):
         request = HTTPRequest(
             "/migration/list",
             {"team": "internal", "Authorization": "Basic A_RANDOM_TOKEN"},
@@ -36,7 +38,7 @@ class TestAuthenticationManager(unittest.TestCase):
         self.assertEqual(valid, False)
 
     @mock.patch.object(JwtRequestsValidator, "validate")
-    def test_validate_on_team_internal_with_jwt(self, mock_validate):
+    def test_validate_on_team_internal_with_bearer(self, mock_validate):
         mock_validate.return_value = True
         request = HTTPRequest(
             "/migration/list",
